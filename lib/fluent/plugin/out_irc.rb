@@ -4,7 +4,7 @@ module Fluent
 
     config_param :host    , :string  , :default => 'localhost'
     config_param :port    , :integer , :default => 6667
-    config_param :channel , :string  , :default => '#fluentd'
+    config_param :channel , :string  , :default => 'fluentd'
     config_param :nick    , :string  , :default => 'fluentd'
     config_param :user    , :string  , :default => 'fluentd'
     config_param :real    , :string  , :default => 'fluentd'
@@ -17,7 +17,7 @@ module Fluent
     def start
       super
       @client = IRCConnection.connect(@host, @port)
-      @client.channel = @channel
+      @client.channel = '#'+@channel
       @client.nick = @nick
       @client.user = @user
       @client.real = @real
@@ -32,7 +32,7 @@ module Fluent
       chain.next
       es.each do |time,record|
         IRCParser.message(:priv_msg) do |m|
-          m.target = @channel
+          m.target = @client.channel
           m.body = record.to_json
           @client.send m
         end
