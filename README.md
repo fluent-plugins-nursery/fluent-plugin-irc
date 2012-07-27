@@ -1,29 +1,59 @@
 # Fluent::Plugin::Irc
 
-TODO: Write a gem description
+Fluent plugin to send messages to IRC server
 
 ## Installation
 
-Add this line to your application's Gemfile:
+`$ fluent-gem install fluent-plugin-mongo`
 
-    gem 'fluent-plugin-irc'
+## Configuration
 
-And then execute:
+### Example
 
-    $ bundle
+```
+<match **>
+  type irc
+  host localhost
+  port 6667
+  channel fluentd
+  nick fluentd
+  user fluentd
+  real fluentd
+  message notice: %s [%s] %s
+  out_keys tag,time,msg
+  time_key time
+  time_format %Y/%m/%d %H:%M:%S
+  tag_key tag
+</match>
+```
 
-Or install it yourself as:
+### Parameter
 
-    $ gem install fluent-plugin-irc
+* host
+  * IRC server host
+* port
+  * IRC server port number
+* channel
+  * channel to send messages (without first '#')
+* nick
+  * nickname registerd of IRC
+* user
+  * user name registerd of IRC
+* real
+  * real name registerd of IRC
+* message
+  * message format. %s will be replaced with value specified by out_keys
+* out_keys
+  * keys used to format messages
+* time_key
+  * key name for time
+* time_format
+  * time format. This will be formatted with Time#strftime.
+* tag_key
+  * key name for tag
 
-## Usage
-
-TODO: Write usage instructions here
-
-## Contributing
-
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Added some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request
+## Copyright
+* Copyright
+  * Copyright (c) 2012 OKUNO Akihiro
+* License
+  * Apache License, Version 2.0
