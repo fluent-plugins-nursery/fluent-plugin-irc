@@ -4,7 +4,7 @@ Fluent plugin to send messages to IRC server
 
 ## Installation
 
-`$ fluent-gem install fluent-plugin-mongo`
+`$ fluent-gem install fluent-plugin-irc`
 
 ## Configuration
 
