@@ -14,6 +14,7 @@ module Fluent
     config_param :nick        , :string  , :default => 'fluentd'
     config_param :user        , :string  , :default => 'fluentd'
     config_param :real        , :string  , :default => 'fluentd'
+    config_param :password    , :string  , :default => nil
     config_param :message     , :string
     config_param :out_keys do |val|
       val.split(',')
@@ -49,6 +50,7 @@ module Fluent
       @client.nick = @nick
       @client.user = @user
       @client.real = @real
+      @client.password = @password
       @client.attach(Coolio::Loop.default)
     end
 
@@ -76,9 +78,15 @@ module Fluent
     end
 
     class IRCConnection < Cool.io::TCPSocket
-      attr_accessor :channel, :nick, :user, :real
+      attr_accessor :channel, :nick, :user, :real, :password
 
       def on_connect
+        if @password
+          IRCParser.message(:pass) do |m|
+            m.password = @password
+            write m
+          end
+        end
         IRCParser.message(:nick) do |m|
           m.nick   = @nick
           write m
