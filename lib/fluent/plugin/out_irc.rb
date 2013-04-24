@@ -73,7 +73,15 @@ module Fluent
 
     private
     def build_message(record)
-      values = @out_keys.map {|key| record[key].to_s}
+      values = @out_keys.map do |key|
+        begin
+          record.fetch(key).to_s
+        rescue KeyError
+          $log.warn "out_irc: the specified key '#{key}' not found in record"
+          ''
+        end
+      end
+
       @message % values
     end
 
