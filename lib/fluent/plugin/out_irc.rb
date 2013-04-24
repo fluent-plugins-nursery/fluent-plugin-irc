@@ -19,8 +19,8 @@ module Fluent
     config_param :out_keys do |val|
       val.split(',')
     end
-    config_param :time_key    , :string  , :default => nil
-    config_param :time_format , :string  , :default => nil
+    config_param :time_key    , :string  , :default => 'time'
+    config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
 
 
