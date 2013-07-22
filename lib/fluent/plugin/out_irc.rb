@@ -40,38 +40,49 @@ module Fluent
 
     def start
       super
+
       begin
-        @client = IRCConnection.connect(@host, @port)
+        @conn = create_connection
       rescue
         raise Fluent::ConfigError, "failto connect IRC server #{@host}:#{@port}"
       end
-
-      @client.channel = '#'+@channel
-      @client.nick = @nick
-      @client.user = @user
-      @client.real = @real
-      @client.password = @password
-      @client.attach(Coolio::Loop.default)
     end
 
     def shutdown
       super
-      @client.close
+      @conn.close unless @conn.closed?
     end
 
     def emit(tag, es, chain)
       chain.next
+
+      if @conn.closed?
+        refresh_connection(@conn)
+      end
+
       es.each do |time,record|
         filter_record(tag, time, record)
-        IRCParser.message(:priv_msg) do |m|
-          m.target = @client.channel
-          m.body = build_message(record)
-          @client.send m
-        end
+        @conn.send_message(build_message(record))
       end
     end
 
     private
+
+    def create_connection
+      conn = IRCConnection.connect(@host, @port)
+      conn.channel = '#'+@channel
+      conn.nick = @nick
+      conn.user = @user
+      conn.real = @real
+      conn.password = @password
+      conn.attach(Coolio::Loop.default)
+      conn
+    end
+
+    def refresh_connection(conn)
+      conn = create_connection
+    end
+
     def build_message(record)
       values = @out_keys.map do |key|
         begin
@@ -106,10 +117,6 @@ module Fluent
         end
       end
 
-      def on_close
-        #TODO
-      end
-
       def on_read(data)
         data.each_line do |line|
           begin
@@ -133,16 +140,12 @@ module Fluent
         end
       end
 
-      def on_resolve_failed
-        #TODO
-      end
-
-      def on_connect_failed
-        #TODO
-      end
-
-      def send(msg)
-        write msg
+      def send_message(msg)
+        IRCParser.message(:priv_msg) do |m|
+          m.target = @channel
+          m.body = msg
+          write m
+        end
       end
     end
   end
