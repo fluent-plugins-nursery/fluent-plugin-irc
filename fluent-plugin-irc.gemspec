@@ -3,9 +3,9 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "fluent-plugin-irc"
-  s.version     = "0.0.3"
+  s.version     = "0.0.4"
   s.authors     = ["OKUNO Akihiro"]
-  s.email       = ["okuno.akihiro@gmail.com"]
+  s.email       = ["choplin.choplin@gmail.com"]
   s.homepage    = "https://github.com/choplin/fluent-plugin-irc"
   s.summary     = %q{Output plugin for IRC}
   s.description = %q{Output plugin for IRC}
