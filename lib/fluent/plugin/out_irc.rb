@@ -42,6 +42,7 @@ module Fluent
       super
 
       begin
+        @loop = Coolio::Loop.default
         @conn = create_connection
       rescue
         raise Fluent::ConfigError, "failto connect IRC server #{@host}:#{@port}"
@@ -57,7 +58,7 @@ module Fluent
       chain.next
 
       if @conn.closed?
-        refresh_connection(@conn)
+        @conn = create_connection
       end
 
       es.each do |time,record|
@@ -75,12 +76,8 @@ module Fluent
       conn.user = @user
       conn.real = @real
       conn.password = @password
-      conn.attach(Coolio::Loop.default)
+      conn.attach(@loop)
       conn
-    end
-
-    def refresh_connection(conn)
-      conn = create_connection
     end
 
     def build_message(record)
