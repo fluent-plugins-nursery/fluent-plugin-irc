@@ -88,7 +88,7 @@ module Fluent
         begin
           record.fetch(key).to_s
         rescue KeyError
-          $log.warn "out_irc: the specified key '#{key}' not found in record"
+          $log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
           ''
         end
       end
