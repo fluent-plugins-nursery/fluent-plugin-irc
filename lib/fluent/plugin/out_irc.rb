@@ -133,6 +133,8 @@ module Fluent
                 m.body = msg.body
                 write m
               end
+            when :error
+              $log.warn "An error occured. \"#{msg.error_message}\""
             end
           rescue
             #TODO
