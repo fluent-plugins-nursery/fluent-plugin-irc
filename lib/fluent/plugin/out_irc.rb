@@ -58,6 +58,7 @@ module Fluent
       chain.next
 
       if @conn.closed?
+        $log.warn "out_irc: connection is closed. try to reconnect"
         @conn = create_connection
       end
 
@@ -131,7 +132,7 @@ module Fluent
                 write m
               end
             when :error
-              $log.warn "An error occured. \"#{msg.error_message}\""
+              $log.warn "out_irc: an error occured. \"#{msg.error_message}\""
             end
           rescue
             #TODO
