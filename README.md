@@ -1,4 +1,4 @@
-# Fluent::Plugin::Irc
+# Fluent::Plugin::Irc, a plugin for [Fluentd](http://fluentd.org)
 
 Fluent plugin to send messages to IRC server
 
