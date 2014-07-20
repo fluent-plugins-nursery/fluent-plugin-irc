@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/choplin/fluent-plugin-irc"
   s.summary     = %q{Output plugin for IRC}
   s.description = %q{Output plugin for IRC}
+  s.license     = "Apache-2.0"
 
   s.rubyforge_project = "fluent-plugin-irc"
 
