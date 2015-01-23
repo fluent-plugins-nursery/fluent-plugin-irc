@@ -8,20 +8,21 @@ module Fluent
     config_set_default :include_time_key, true
     config_set_default :include_tag_key, true
 
-    config_param :host        , :string  , :default => 'localhost'
-    config_param :port        , :integer , :default => 6667
-    config_param :channel     , :string
-    config_param :nick        , :string  , :default => 'fluentd'
-    config_param :user        , :string  , :default => 'fluentd'
-    config_param :real        , :string  , :default => 'fluentd'
-    config_param :password    , :string  , :default => nil
-    config_param :message     , :string
+    config_param :host         , :string  , :default => 'localhost'
+    config_param :port         , :integer , :default => 6667
+    config_param :channel      , :string
+    config_param :nick         , :string  , :default => 'fluentd'
+    config_param :user         , :string  , :default => 'fluentd'
+    config_param :real         , :string  , :default => 'fluentd'
+    config_param :password     , :string  , :default => nil
+    config_param :message      , :string
+    config_param :message_type , :string  , :default => 'priv_msg'
     config_param :out_keys do |val|
       val.split(',')
     end
-    config_param :time_key    , :string  , :default => 'time'
-    config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
-    config_param :tag_key     , :string  , :default => 'tag'
+    config_param :time_key     , :string  , :default => 'time'
+    config_param :time_format  , :string  , :default => '%Y/%m/%d %H:%M:%S'
+    config_param :tag_key      , :string  , :default => 'tag'
 
 
     def initialize
@@ -35,6 +36,10 @@ module Fluent
         @message % (['1'] * @out_keys.length)
       rescue ArgumentError
         raise Fluent::ConfigError, "string specifier '%s' and out_keys specification mismatch"
+      end
+
+      unless %w(priv_msg notice).include? @message_type
+        raise Fluent::ConfigError, "message_type must be `priv_msg` or `notice`"
       end
     end
 
@@ -64,8 +69,12 @@ module Fluent
 
       es.each do |time,record|
         filter_record(tag, time, record)
-        @conn.send_message(build_message(record))
+        @conn.send_message(build_message(record), message_type)
       end
+    end
+
+    def message_type
+      @message_type.to_sym
     end
 
     private
@@ -140,8 +149,8 @@ module Fluent
         end
       end
 
-      def send_message(msg)
-        IRCParser.message(:priv_msg) do |m|
+      def send_message(msg, message_type)
+        IRCParser.message(message_type) do |m|
           m.target = @channel
           m.body = msg
           write m

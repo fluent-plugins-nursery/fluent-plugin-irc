@@ -14,6 +14,7 @@ class IRCOutputTest < Test::Unit::TestCase
     user fluentd
     real fluentd
     message notice: %s [%s] %s
+    message_type priv_msg
     out_keys tag,time,msg
     time_key time
     time_format %Y/%m/%d %H:%M:%S
@@ -34,6 +35,7 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal "fluentd", d.instance.user
     assert_equal "fluentd", d.instance.real
     assert_equal "notice: %s [%s] %s", d.instance.message
+    assert_equal :priv_msg, d.instance.message_type
     assert_equal ["tag","time","msg"], d.instance.out_keys
     assert_equal "time", d.instance.time_key
     assert_equal "%Y/%m/%d %H:%M:%S", d.instance.time_format
