@@ -42,6 +42,7 @@ Fluent plugin to send messages to IRC server
 |time_key|key name for time|time|
 |time_format|time format. This will be formatted with Time#strftime.|%Y/%m/%d %H:%M:%S|
 |tag_key|key name for tag|tag|
+|channel_keys|keys used to format channel. %s will be replaced with value specified by channel_keys if this option is used|nil|
 
 ## Copyright
 

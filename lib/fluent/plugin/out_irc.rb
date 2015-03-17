@@ -11,6 +11,9 @@ module Fluent
     config_param :host        , :string  , :default => 'localhost'
     config_param :port        , :integer , :default => 6667
     config_param :channel     , :string
+    config_param :channel_keys, :default => nil do |val|
+      val.split(',')
+    end
     config_param :nick        , :string  , :default => 'fluentd'
     config_param :user        , :string  , :default => 'fluentd'
     config_param :real        , :string  , :default => 'fluentd'
@@ -36,6 +39,14 @@ module Fluent
       rescue ArgumentError
         raise Fluent::ConfigError, "string specifier '%s' and out_keys specification mismatch"
       end
+      if @channel_keys
+        begin
+          @channel % (['1'] * @channel_keys.length)
+        rescue ArgumentError
+          raise Fluent::ConfigError, "string specifier '%s' and channel_keys specification mismatch"
+        end
+      end
+      @channel = '#'+@channel
     end
 
     def start
@@ -45,7 +56,7 @@ module Fluent
         @loop = Coolio::Loop.default
         @conn = create_connection
       rescue
-        raise Fluent::ConfigError, "failto connect IRC server #{@host}:#{@port}"
+        raise Fluent::ConfigError, "failed to connect IRC server #{@host}:#{@port}"
       end
     end
 
@@ -64,7 +75,7 @@ module Fluent
 
       es.each do |time,record|
         filter_record(tag, time, record)
-        @conn.send_message(build_message(record))
+        @conn.send_message(build_message(record), build_channel(record))
       end
     end
 
@@ -72,7 +83,6 @@ module Fluent
 
     def create_connection
       conn = IRCConnection.connect(@host, @port)
-      conn.channel = '#'+@channel
       conn.nick = @nick
       conn.user = @user
       conn.real = @real
@@ -94,8 +104,28 @@ module Fluent
       @message % values
     end
 
+    def build_channel(record)
+      return @channel unless @channel_keys
+
+      values = @channel_keys.map do |key|
+        begin
+          record.fetch(key).to_s
+        rescue KeyError
+          $log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
+          ''
+        end
+      end
+
+      @channel % values
+    end
+
     class IRCConnection < Cool.io::TCPSocket
-      attr_accessor :channel, :nick, :user, :real, :password
+      attr_accessor :nick, :user, :real, :password
+
+      def initialize(*args)
+        super
+        @joined = {}
+      end
 
       def on_connect
         if @password
@@ -120,11 +150,6 @@ module Fluent
           begin
             msg = IRCParser.parse(line)
             case msg.class.to_sym
-            when :rpl_welcome
-              IRCParser.message(:join) do |m|
-                m.channels = @channel
-                write m
-              end
             when :ping
               IRCParser.message(:pong) do |m|
                 m.target = msg.target
@@ -140,9 +165,22 @@ module Fluent
         end
       end
 
-      def send_message(msg)
+      def joined?(channel)
+        @joined[channel]
+      end
+
+      def join(channel)
+        IRCParser.message(:join) do |m|
+          m.channels = channel
+          write m
+        end
+        @joined[channel] = true
+      end
+
+      def send_message(msg, channel)
+        join(channel) unless joined?(channel)
         IRCParser.message(:priv_msg) do |m|
-          m.target = @channel
+          m.target = channel
           m.body = msg
           write m
         end
