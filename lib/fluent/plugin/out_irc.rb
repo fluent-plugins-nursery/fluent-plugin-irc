@@ -22,7 +22,9 @@ module Fluent
     config_param :time_key    , :string  , :default => 'time'
     config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
+    config_param :command     , :string  , :default => 'priv_msg'
 
+    COMMAND_LIST = %w[priv_msg notice]
 
     def initialize
       super
@@ -35,6 +37,9 @@ module Fluent
         @message % (['1'] * @out_keys.length)
       rescue ArgumentError
         raise Fluent::ConfigError, "string specifier '%s' and out_keys specification mismatch"
+      end
+      unless COMMAND_LIST.include?(@command)
+        raise Fluent::ConfigError, "command must be one of #{COMMAND_LIST.join(', ')}"
       end
     end
 
@@ -72,6 +77,7 @@ module Fluent
 
     def create_connection
       conn = IRCConnection.connect(@host, @port)
+      conn.command = @command
       conn.channel = '#'+@channel
       conn.nick = @nick
       conn.user = @user
@@ -95,7 +101,7 @@ module Fluent
     end
 
     class IRCConnection < Cool.io::TCPSocket
-      attr_accessor :channel, :nick, :user, :real, :password
+      attr_accessor :command, :channel, :nick, :user, :real, :password
 
       def on_connect
         if @password
@@ -141,7 +147,7 @@ module Fluent
       end
 
       def send_message(msg)
-        IRCParser.message(:priv_msg) do |m|
+        IRCParser.message(@command) do |m|
           m.target = @channel
           m.body = msg
           write m

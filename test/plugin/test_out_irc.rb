@@ -13,6 +13,7 @@ class IRCOutputTest < Test::Unit::TestCase
     nick fluentd
     user fluentd
     real fluentd
+    command notice
     message notice: %s [%s] %s
     out_keys tag,time,msg
     time_key time
@@ -33,6 +34,7 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal "fluentd", d.instance.nick
     assert_equal "fluentd", d.instance.user
     assert_equal "fluentd", d.instance.real
+    assert_equal "notice", d.instance.command
     assert_equal "notice: %s [%s] %s", d.instance.message
     assert_equal ["tag","time","msg"], d.instance.out_keys
     assert_equal "time", d.instance.time_key
