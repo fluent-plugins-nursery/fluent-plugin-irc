@@ -23,6 +23,10 @@ module Fluent
     config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
 
+    # To support log_level option implemented by Fluentd v0.10.43
+    unless method_defined?(:log)
+      define_method("log") { $log }
+    end
 
     def initialize
       super
@@ -58,7 +62,7 @@ module Fluent
       chain.next
 
       if @conn.closed?
-        $log.warn "out_irc: connection is closed. try to reconnect"
+        log.warn "out_irc: connection is closed. try to reconnect"
         @conn = create_connection
       end
 
@@ -86,7 +90,7 @@ module Fluent
         begin
           record.fetch(key).to_s
         rescue KeyError
-          $log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
+          log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
           ''
         end
       end
@@ -132,7 +136,7 @@ module Fluent
                 write m
               end
             when :error
-              $log.warn "out_irc: an error occured. \"#{msg.error_message}\""
+              log.warn "out_irc: an error occured. \"#{msg.error_message}\""
             end
           rescue
             #TODO
