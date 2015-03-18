@@ -14,6 +14,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
   def setup
     Fluent::Test.setup
+    Fluent::Engine.now = Time.now
   end
 
   def config(
