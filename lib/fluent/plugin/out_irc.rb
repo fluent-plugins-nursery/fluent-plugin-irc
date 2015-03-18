@@ -27,6 +27,8 @@ module Fluent
     config_param :tag_key     , :string  , :default => 'tag'
     config_param :command     , :string  , :default => 'priv_msg'
 
+    config_param :blocking_timeout, :time, :default => 0.5
+
     COMMAND_LIST = %w[priv_msg notice]
 
     # To support log_level option implemented by Fluentd v0.10.43
@@ -67,16 +69,28 @@ module Fluent
       super
 
       begin
-        @loop = Coolio::Loop.default
+        @loop = Coolio::Loop.new
         @conn = create_connection
-      rescue
+        @thread = Thread.new(&method(:run))
+      rescue => e
+        puts e
         raise Fluent::ConfigError, "failed to connect IRC server #{@host}:#{@port}"
       end
     end
 
     def shutdown
       super
-      @conn.close unless @conn.closed?
+      @loop.watchers.each { |w| w.detach }
+      @loop.stop
+      @conn.close
+      @thread.join
+    end
+
+    def run
+      @loop.run(@blocking_timeout)
+    rescue => e
+      log.error "unexpected error", :error => e, :error_class => e.class
+      log.error_backtrace
     end
 
     def emit(tag, es, chain)
