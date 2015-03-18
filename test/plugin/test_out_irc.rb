@@ -96,12 +96,52 @@ class IRCOutputTest < Test::Unit::TestCase
     end
   end
 
+  def test_dynamic_channel
+    msgs = [
+      {"msg" => "test", "channel" => "chan1"},
+      {"msg" => "test", "channel" => "chan2"},
+      {"msg" => "test", "channel" => "chan1"},
+    ]
+
+    extra_config = {
+      channel: "%s",
+      channel_keys: "channel",
+    }
+
+    emit_test(msgs, extra_config: extra_config) do |socket|
+      socket.gets # ignore NICK
+      socket.gets # ignore USER
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :join
+      assert_equal m.channels, ["#chan1"]
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, COMMAND
+      assert_equal m.target, "#chan1"
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :join
+      assert_equal m.channels, ["#chan2"]
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, COMMAND
+      assert_equal m.target, "#chan2"
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, COMMAND
+      assert_equal m.target, "#chan1"
+
+      assert_nil socket.gets # expects EOF
+    end
+  end
+
   private
 
-  def emit_test(msgs, &block)
+  def emit_test(msgs, extra_config: {}, &block)
     TCPServer.open(0) do |serv|
       port = serv.addr[1]
-      d = create_driver(config(port: port))
+      d = create_driver(config({port: port}.merge(extra_config)))
 
       thread = Thread.new do
         s = serv.accept
