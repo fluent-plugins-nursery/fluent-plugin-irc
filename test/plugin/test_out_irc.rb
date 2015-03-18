@@ -111,7 +111,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
       d.run do
         msgs.each do |m|
-          d.emit(m)
+          d.emit(m, Fluent::Engine.now)
         end
         # How to remove sleep?
         # It is necessary to ensure that no data remains in Cool.io write buffer before detach.
