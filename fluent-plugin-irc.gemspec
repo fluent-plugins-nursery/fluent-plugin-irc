@@ -20,5 +20,7 @@ Gem::Specification.new do |s|
 
   s.add_runtime_dependency "fluentd"
   s.add_runtime_dependency "irc_parser"
+
   s.add_development_dependency "test-unit"
+  s.add_development_dependency "rake"
 end
