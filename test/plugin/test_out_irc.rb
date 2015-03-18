@@ -5,23 +5,31 @@ class IRCOutputTest < Test::Unit::TestCase
     Fluent::Test.setup
   end
 
-  CONFIG = %[
-    type irc
-    host localhost
-    port 6667
-    channel fluentd
-    nick fluentd
-    user fluentd
-    real fluentd
-    command notice
-    message notice: %s [%s] %s
-    out_keys tag,time,msg
-    time_key time
-    time_format %Y/%m/%d %H:%M:%S
-    tag_key tag
-  ]
+  def config(
+    port: 6667,
+    channel: "fluentd",
+    channel_keys: ""
+  )
+    %[
+      type irc
+      host localhost
+      port #{port}
+      channel #{channel}
+      channel_keys #{channel_keys}
+      nick fluentd
+      user fluentd
+      real fluentd
+      command notice
+      message notice: %s [%s] %s
+      out_keys tag,time,msg
+      time_key time
+      time_format %Y/%m/%d %H:%M:%S
+      tag_key tag
+    ]
+  end
 
-  def create_driver(conf = CONFIG)
+
+  def create_driver(conf = config)
     Fluent::Test::OutputTestDriver.new(Fluent::IRCOutput).configure(conf)
   end
 
@@ -43,7 +51,7 @@ class IRCOutputTest < Test::Unit::TestCase
   end
 
   def test_configure_channel_keys
-    d = create_driver(CONFIG + %[channel %s\nchannel_keys channel])
+    d = create_driver(config(channel:"%s", channel_keys:"channel"))
     assert_equal "#%s", d.instance.channel
     assert_equal ["channel"], d.instance.channel_keys
   end
