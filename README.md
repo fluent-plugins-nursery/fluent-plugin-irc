@@ -50,6 +50,6 @@ Fluent plugin to send messages to IRC server
 ## Copyright
 
 <table>
-<tr><td>Copyright</td><td>Copyright (c) 2013 OKUNO Akihiro</td></tr>
+<tr><td>Copyright</td><td>Copyright (c) 2015 OKUNO Akihiro</td></tr>
 <tr><td>License</td><td>Apache License, Version 2.0</td></tr>
 </table>
