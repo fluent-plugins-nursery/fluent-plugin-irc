@@ -30,7 +30,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
     assert_equal "localhost", d.instance.host
     assert_equal 6667, d.instance.port
-    assert_equal "fluentd", d.instance.channel
+    assert_equal "#fluentd", d.instance.channel
     assert_equal "fluentd", d.instance.nick
     assert_equal "fluentd", d.instance.user
     assert_equal "fluentd", d.instance.real
@@ -40,6 +40,11 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal "time", d.instance.time_key
     assert_equal "%Y/%m/%d %H:%M:%S", d.instance.time_format
     assert_equal "tag", d.instance.tag_key
+
+    # channel_keys
+    d = create_driver(CONFIG + %[channel %s\nchannel_keys channel])
+    assert_equal "#%s", d.instance.channel
+    assert_equal ["channel"], d.instance.channel_keys
   end
 
   #def test_emit
