@@ -40,8 +40,9 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal "time", d.instance.time_key
     assert_equal "%Y/%m/%d %H:%M:%S", d.instance.time_format
     assert_equal "tag", d.instance.tag_key
+  end
 
-    # channel_keys
+  def test_configure_channel_keys
     d = create_driver(CONFIG + %[channel %s\nchannel_keys channel])
     assert_equal "#%s", d.instance.channel
     assert_equal ["channel"], d.instance.channel_keys
