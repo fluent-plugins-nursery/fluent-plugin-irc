@@ -1,5 +1,7 @@
 # Fluent::Plugin::Irc, a plugin for [Fluentd](http://fluentd.org)
 
+[![Build Status](https://travis-ci.org/choplin/fluent-plugin-irc.svg)](https://travis-ci.org/choplin/fluent-plugin-irc)
+
 Fluent plugin to send messages to IRC server
 
 ## Installation
