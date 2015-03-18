@@ -136,7 +136,7 @@ module Fluent
     end
 
     class IRCConnection < Cool.io::TCPSocket
-      attr_accessor :command, :nick, :user, :real, :password
+      attr_accessor :command, :channel, :nick, :user, :real, :password
 
       def initialize(*args)
         super
@@ -195,7 +195,7 @@ module Fluent
 
       def send_message(msg, channel)
         join(channel) unless joined?(channel)
-        IRCParser.message(:priv_msg) do |m|
+        IRCParser.message(@command) do |m|
           m.target = channel
           m.body = msg
           write m
