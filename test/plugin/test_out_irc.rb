@@ -20,9 +20,10 @@ class IRCOutputTest < Test::Unit::TestCase
   def config(
     port: PORT,
     channel: CHANNEL,
-    channel_keys: ""
+    channel_keys: "",
+    command_key: nil
   )
-    %[
+    config = %[
       type irc
       host localhost
       port #{port}
@@ -38,6 +39,8 @@ class IRCOutputTest < Test::Unit::TestCase
       time_format #{TIME_FORMAT}
       tag_key tag
     ]
+    config += %[command_key #{command_key}] if command_key
+    config
   end
 
 
@@ -54,7 +57,7 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal NICK, d.instance.nick
     assert_equal USER, d.instance.user
     assert_equal REAL, d.instance.real
-    assert_equal COMMAND.to_s, d.instance.command
+    assert_equal COMMAND, d.instance.command
     assert_equal MESSAGE, d.instance.message
     assert_equal ["tag","time","msg"], d.instance.out_keys
     assert_equal "time", d.instance.time_key
@@ -131,6 +134,37 @@ class IRCOutputTest < Test::Unit::TestCase
       m = IRCParser.parse(socket.gets)
       assert_equal m.class.to_sym, COMMAND
       assert_equal m.target, "#chan1"
+
+      assert_nil socket.gets # expects EOF
+    end
+  end
+
+  def test_dynamic_command
+    msgs = [
+      {"msg" => "test", "command" => "privmsg"},
+      {"msg" => "test", "command" => "priv_msg"},
+      {"msg" => "test", "command" => "notice"},
+    ]
+
+    extra_config = {
+      command_key: "command",
+    }
+
+    emit_test(msgs, extra_config: extra_config) do |socket|
+      socket.gets # ignore NICK
+      socket.gets # ignore USER
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :join
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :priv_msg
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :priv_msg
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :notice
 
       assert_nil socket.gets # expects EOF
     end

@@ -25,11 +25,16 @@ module Fluent
     config_param :time_key    , :string  , :default => 'time'
     config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
-    config_param :command     , :string  , :default => 'priv_msg'
+    config_param :command     , :string  , :default => 'privmsg'
+    config_param :command_key , :string  , :default => nil
 
     config_param :blocking_timeout, :time, :default => 0.5
 
-    COMMAND_LIST = %w[priv_msg notice]
+    COMMAND_MAP = {
+      'priv_msg' => :priv_msg,
+      'privmsg'  => :priv_msg,
+      'notice'   => :notice,
+    }
 
     # To support log_level option implemented by Fluentd v0.10.43
     unless method_defined?(:log)
@@ -59,10 +64,11 @@ module Fluent
       end
       @channel = '#'+@channel
 
-      unless COMMAND_LIST.include?(@command)
-        raise Fluent::ConfigError, "command must be one of #{COMMAND_LIST.join(', ')}"
+      unless @command_key
+        unless @command = COMMAND_MAP[@command]
+          raise Fluent::ConfigError, "command must be one of #{COMMAND_MAP.keys.join(', ')}"
+        end
       end
-
     end
 
     def start
@@ -103,7 +109,7 @@ module Fluent
 
       es.each do |time,record|
         filter_record(tag, time, record)
-        @conn.send_message(build_message(record), build_channel(record))
+        @conn.send_message(build_message(record), build_channel(record), build_command(record))
       end
     end
 
@@ -111,8 +117,7 @@ module Fluent
 
     def create_connection
       conn = IRCConnection.connect(@host, @port)
-      conn.command = @command
-      conn.channel = '#'+@channel
+      conn.log  = log
       conn.nick = @nick
       conn.user = @user
       conn.real = @real
@@ -122,7 +127,26 @@ module Fluent
     end
 
     def build_message(record)
-      values = @out_keys.map do |key|
+      values = fetch_keys(record, @out_keys)
+      @message % values
+    end
+
+    def build_channel(record)
+      return @channel unless @channel_keys
+
+      values = fetch_keys(record, @channel_keys)
+      @channel % values
+    end
+
+    def build_command(record)
+      return @command unless @command_key
+
+      command = record[@command_key]
+      COMMAND_MAP[command]
+    end
+
+    def fetch_keys(record, keys)
+      Array(keys).map do |key|
         begin
           record.fetch(key).to_s
         rescue KeyError
@@ -130,27 +154,10 @@ module Fluent
           ''
         end
       end
-
-      @message % values
-    end
-
-    def build_channel(record)
-      return @channel unless @channel_keys
-
-      values = @channel_keys.map do |key|
-        begin
-          record.fetch(key).to_s
-        rescue KeyError
-          $log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
-          ''
-        end
-      end
-
-      @channel % values
     end
 
     class IRCConnection < Cool.io::TCPSocket
-      attr_accessor :command, :channel, :nick, :user, :real, :password
+      attr_accessor :log, :nick, :user, :real, :password
 
       def initialize(*args)
         super
@@ -207,9 +214,9 @@ module Fluent
         @joined[channel] = true
       end
 
-      def send_message(msg, channel)
+      def send_message(msg, channel, command)
         join(channel) unless joined?(channel)
-        IRCParser.message(@command) do |m|
+        IRCParser.message(command) do |m|
           m.target = channel
           m.body = msg
           write m

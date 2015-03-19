@@ -36,6 +36,7 @@ Fluent plugin to send messages to IRC server
 |host|IRC server host|localhost|
 |port|IRC server port number|6667|
 |channel|channel to send messages (without first '#')||
+|channel_keys|keys used to format channel. %s will be replaced with value specified by channel_keys if this option is used|nil|
 |nick|nickname registerd of IRC|fluentd|
 |user|user name registerd of IRC|fluentd|
 |real|real name registerd of IRC|fluentd|
@@ -44,8 +45,8 @@ Fluent plugin to send messages to IRC server
 |time_key|key name for time|time|
 |time_format|time format. This will be formatted with Time#strftime.|%Y/%m/%d %H:%M:%S|
 |tag_key|key name for tag|tag|
-|command|irc command. `priv_msg` or `notice`|priv_msg|
-|channel_keys|keys used to format channel. %s will be replaced with value specified by channel_keys if this option is used|nil|
+|command|irc command. `privmsg` or `notice`|privmsg|
+|command_key|`command` will be replaced with value specified by command_key if this option is used||
 
 ## Copyright
 
