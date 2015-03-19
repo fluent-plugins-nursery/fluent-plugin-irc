@@ -46,7 +46,7 @@ Fluent plugin to send messages to IRC server
 |time_format|time format. This will be formatted with Time#strftime.|%Y/%m/%d %H:%M:%S|
 |tag_key|key name for tag|tag|
 |command|irc command. `privmsg` or `notice`|privmsg|
-|command_key|`command` will be replaced with value specified by command_key if this option is used||
+|command_keys|keys used to format command. %s will be replaced with value specified by command_keys if this option is used|nil|
 
 ## Copyright
 

@@ -26,7 +26,9 @@ module Fluent
     config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
     config_param :command     , :string  , :default => 'privmsg'
-    config_param :command_key , :string  , :default => nil
+    config_param :command_keys, :default => nil do |val|
+      val.split(',')
+    end
 
     config_param :blocking_timeout, :time, :default => 0.5
 
@@ -64,7 +66,13 @@ module Fluent
       end
       @channel = '#'+@channel
 
-      unless @command_key
+      if @command_keys
+        begin
+          @command % (['1'] * @command_keys.length)
+        rescue ArgumentError
+          raise Fluent::ConfigError, "string specifier '%s' and command_keys specification mismatch"
+        end
+      else
         unless @command = COMMAND_MAP[@command]
           raise Fluent::ConfigError, "command must be one of #{COMMAND_MAP.keys.join(', ')}"
         end
@@ -139,10 +147,13 @@ module Fluent
     end
 
     def build_command(record)
-      return @command unless @command_key
+      return @command unless @command_keys
 
-      command = record[@command_key]
-      COMMAND_MAP[command]
+      values = fetch_keys(record, @command_keys)
+      unless command = COMMAND_MAP[@command % values]
+        log.warn "out_irc: command is not one of #{COMMAND_MAP.keys.join(', ')}, use privmsg"
+      end
+      command || :priv_msg
     end
 
     def fetch_keys(record, keys)
