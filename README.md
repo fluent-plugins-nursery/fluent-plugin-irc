@@ -47,6 +47,8 @@ Fluent plugin to send messages to IRC server
 |tag_key|key name for tag|tag|
 |command|irc command. `privmsg` or `notice`|privmsg|
 |command_keys|keys used to format command. %s will be replaced with value specified by command_keys if this option is used|nil|
+|send_interval|interval (sec) to send message. defence Excess Flood|2|
+|send_queue_limit|maximum size of send message queue|100|
 
 ## Copyright
 
