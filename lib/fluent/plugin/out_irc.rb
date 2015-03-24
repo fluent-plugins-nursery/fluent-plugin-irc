@@ -198,6 +198,8 @@ module Fluent
           begin
             msg = IRCParser.parse(line)
             case msg.class.to_sym
+            when :rpl_welcome
+              log.info { "out_irc: welcome \"#{msg.nick}\" to \"#{msg.prefix}\"" }
             when :ping
               IRCParser.message(:pong) do |m|
                 m.target = msg.target
@@ -205,7 +207,9 @@ module Fluent
                 write m
               end
             when :err_nick_name_in_use
-              log.warn "out_irc: nickname \"#{msg.error_nick}\" is already in use."
+              log.warn "out_irc: nickname \"#{msg.error_nick}\" is already in use. use \"#{@nick}_\" instead."
+              @nick = "#{@nick}_"
+              on_connect
             when :error
               log.warn "out_irc: an error occured. \"#{msg.error_message}\""
             end

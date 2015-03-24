@@ -192,6 +192,32 @@ class IRCOutputTest < Test::Unit::TestCase
     end
   end
 
+  def test_fallback_err_nick_name_in_use
+    msgs = [
+      {"msg" => "test", "command" => "privmsg"},
+    ]
+
+    emit_test(msgs) do |socket, d|
+      socket.gets # ignore NICK
+      socket.gets # ignore USER
+      socket.gets # ignore join
+      socket.gets # ignore priv_msg
+
+      # imitate to receive :err_nick_name_in_use
+      conn = d.instance.instance_variable_get(:@conn)
+      IRCParser.message(:err_nick_name_in_use) do |m|
+        conn.on_read(m.to_s)
+      end
+
+      sleep 1
+
+      # test to use `#{NICK}_` instead
+      m = IRCParser.parse(socket.gets)
+      assert_equal :nick, m.class.to_sym
+      assert_equal "#{NICK}_", m.nick
+    end
+  end
+
   private
 
   def emit_test(msgs, extra_config: {}, &block)
@@ -201,7 +227,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
       thread = Thread.new do
         s = serv.accept
-        block.call(s)
+        block.call(s, d)
         s.close
       end
 
