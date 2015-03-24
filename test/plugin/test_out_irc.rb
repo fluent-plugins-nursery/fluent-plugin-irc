@@ -20,9 +20,11 @@ class IRCOutputTest < Test::Unit::TestCase
   def config(
     port: PORT,
     channel: CHANNEL,
-    channel_keys: ""
+    channel_keys: "",
+    command: COMMAND.to_s,
+    command_keys: nil
   )
-    %[
+    config = %[
       type irc
       host localhost
       port #{port}
@@ -31,13 +33,15 @@ class IRCOutputTest < Test::Unit::TestCase
       nick #{NICK}
       user #{USER}
       real #{REAL}
-      command #{COMMAND.to_s}
+      command #{command}
       message #{MESSAGE}
       out_keys tag,time,msg
       time_key time
       time_format #{TIME_FORMAT}
       tag_key tag
     ]
+    config += %[command_keys #{command_keys}] if command_keys
+    config
   end
 
 
@@ -54,7 +58,7 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal NICK, d.instance.nick
     assert_equal USER, d.instance.user
     assert_equal REAL, d.instance.real
-    assert_equal COMMAND.to_s, d.instance.command
+    assert_equal COMMAND, d.instance.command
     assert_equal MESSAGE, d.instance.message
     assert_equal ["tag","time","msg"], d.instance.out_keys
     assert_equal "time", d.instance.time_key
@@ -66,6 +70,22 @@ class IRCOutputTest < Test::Unit::TestCase
     d = create_driver(config(channel:"%s", channel_keys:"channel"))
     assert_equal "#%s", d.instance.channel
     assert_equal ["channel"], d.instance.channel_keys
+  end
+
+  def test_configure_command_keys
+    d = create_driver(config(command:"%s", command_keys:"command"))
+    assert_equal "%s", d.instance.command
+    assert_equal ["command"], d.instance.command_keys
+  end
+
+  def test_configure_command
+    assert_raise Fluent::ConfigError do
+      create_driver(config(command: 'foo'))
+    end
+
+    assert_nothing_raised { create_driver(config(command: 'priv_msg')) }
+    assert_nothing_raised { create_driver(config(command: 'privmsg')) }
+    assert_nothing_raised { create_driver(config(command: 'notice')) }
   end
 
   def test_emit
@@ -131,6 +151,42 @@ class IRCOutputTest < Test::Unit::TestCase
       m = IRCParser.parse(socket.gets)
       assert_equal m.class.to_sym, COMMAND
       assert_equal m.target, "#chan1"
+
+      assert_nil socket.gets # expects EOF
+    end
+  end
+
+  def test_dynamic_command
+    msgs = [
+      {"msg" => "test", "command" => "privmsg"},
+      {"msg" => "test", "command" => "priv_msg"},
+      {"msg" => "test", "command" => "notice"},
+      {"msg" => "test", "command" => "something_wrong"},
+    ]
+
+    extra_config = {
+      command: "%s",
+      command_keys: "command",
+    }
+
+    emit_test(msgs, extra_config: extra_config) do |socket|
+      socket.gets # ignore NICK
+      socket.gets # ignore USER
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :join
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :priv_msg
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :priv_msg
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :notice
+
+      m = IRCParser.parse(socket.gets)
+      assert_equal m.class.to_sym, :priv_msg # replaced by default priv_msg
 
       assert_nil socket.gets # expects EOF
     end
