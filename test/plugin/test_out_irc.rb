@@ -39,6 +39,8 @@ class IRCOutputTest < Test::Unit::TestCase
       time_key time
       time_format #{TIME_FORMAT}
       tag_key tag
+      send_queue_limit 10
+      send_interval 0.5
     ]
     config += %[command_keys #{command_keys}] if command_keys
     config
@@ -64,6 +66,8 @@ class IRCOutputTest < Test::Unit::TestCase
     assert_equal "time", d.instance.time_key
     assert_equal TIME_FORMAT, d.instance.time_format
     assert_equal "tag", d.instance.tag_key
+    assert_equal 10,  d.instance.send_queue_limit
+    assert_equal 0.5, d.instance.send_interval
   end
 
   def test_configure_channel_keys
@@ -95,22 +99,22 @@ class IRCOutputTest < Test::Unit::TestCase
 
     emit_test(msgs) do |socket|
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :nick
-      assert_equal m.nick, NICK
+      assert_equal :nick, m.class.to_sym
+      assert_equal NICK, m.nick
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :user
-      assert_equal m.user, USER
-      assert_equal m.postfix, REAL
+      assert_equal :user, m.class.to_sym
+      assert_equal USER, m.user
+      assert_equal REAL, m.postfix
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :join
-      assert_equal m.channels, ["##{CHANNEL}"]
+      assert_equal :join, m.class.to_sym, :join
+      assert_equal ["##{CHANNEL}"], m.channels
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, COMMAND
-      assert_equal m.target, "##{CHANNEL}"
-      assert_equal m.body, body
+      assert_equal COMMAND, m.class.to_sym
+      assert_equal "##{CHANNEL}", m.target
+      assert_equal body, m.body
 
       assert_nil socket.gets # expects EOF
     end
@@ -133,24 +137,24 @@ class IRCOutputTest < Test::Unit::TestCase
       socket.gets # ignore USER
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :join
-      assert_equal m.channels, ["#chan1"]
+      assert_equal :join, m.class.to_sym
+      assert_equal ["#chan1"], m.channels
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, COMMAND
-      assert_equal m.target, "#chan1"
+      assert_equal COMMAND, m.class.to_sym
+      assert_equal "#chan1", m.target
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :join
-      assert_equal m.channels, ["#chan2"]
+      assert_equal :join, m.class.to_sym
+      assert_equal ["#chan2"], m.channels
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, COMMAND
-      assert_equal m.target, "#chan2"
+      assert_equal COMMAND, m.class.to_sym
+      assert_equal "#chan2", m.target
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, COMMAND
-      assert_equal m.target, "#chan1"
+      assert_equal COMMAND, m.class.to_sym
+      assert_equal "#chan1", m.target
 
       assert_nil socket.gets # expects EOF
     end
@@ -174,19 +178,19 @@ class IRCOutputTest < Test::Unit::TestCase
       socket.gets # ignore USER
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :join
+      assert_equal :join, m.class.to_sym
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :priv_msg
+      assert_equal :priv_msg, m.class.to_sym
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :priv_msg
+      assert_equal :priv_msg, m.class.to_sym
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :notice
+      assert_equal :notice, m.class.to_sym
 
       m = IRCParser.parse(socket.gets)
-      assert_equal m.class.to_sym, :priv_msg # replaced by default priv_msg
+      assert_equal :priv_msg, m.class.to_sym # replaced by default priv_msg
 
       assert_nil socket.gets # expects EOF
     end
@@ -234,6 +238,8 @@ class IRCOutputTest < Test::Unit::TestCase
       d.run do
         msgs.each do |m|
           d.emit(m, Fluent::Engine.now)
+          channel = d.instance.on_timer
+          d.instance.conn.joined[channel] = true # pseudo join
         end
         # How to remove sleep?
         # It is necessary to ensure that no data remains in Cool.io write buffer before detach.
