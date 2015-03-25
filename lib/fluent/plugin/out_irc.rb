@@ -130,7 +130,11 @@ module Fluent
         end
 
         filter_record(tag, time, record)
-        command, channel, message = build_command(record), build_channel(record), build_message(record)
+
+        command = build_command(record)
+        channel = build_channel(record)
+        message = build_message(record)
+
         log.debug { "out_irc: push {command:\"#{command}\", channel:\"#{channel}\", message:\"#{message}\"}" }
         @send_queue.push([command, channel, message])
       end
