@@ -17,7 +17,7 @@ module Fluent
     config_param :nick        , :string  , :default => 'fluentd'
     config_param :user        , :string  , :default => 'fluentd'
     config_param :real        , :string  , :default => 'fluentd'
-    config_param :password    , :string  , :default => nil
+    config_param :password    , :string  , :default => nil, :secret => true
     config_param :message     , :string
     config_param :out_keys do |val|
       val.split(',')
