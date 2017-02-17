@@ -37,9 +37,9 @@ Fluent plugin to send messages to IRC server
 |port|IRC server port number|6667|
 |channel|channel to send messages (without first '#')||
 |channel_keys|keys used to format channel. %s will be replaced with value specified by channel_keys if this option is used|nil|
-|nick|nickname registerd of IRC|fluentd|
-|user|user name registerd of IRC|fluentd|
-|real|real name registerd of IRC|fluentd|
+|nick|nickname registered of IRC|fluentd|
+|user|user name registered of IRC|fluentd|
+|real|real name registered of IRC|fluentd|
 |message|message format. %s will be replaced with value specified by out_keys||
 |out_keys|keys used to format messages||
 |time_key|key name for time|time|
