@@ -245,7 +245,7 @@ class IRCOutputTest < Test::Unit::TestCase
         end
         # How to remove sleep?
         # It is necessary to ensure that no data remains in Cool.io write buffer before detach.
-        sleep 1
+        sleep 1.5
       end
 
       thread.join
