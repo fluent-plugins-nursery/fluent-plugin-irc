@@ -1,9 +1,10 @@
-module Fluent
-  class IRCOutput < Fluent::Output
+require 'fluent/plugin/output'
+
+module Fluent::Plugin
+  class IRCOutput < Output
     Fluent::Plugin.register_output('irc', self)
 
-    include SetTimeKeyMixin
-    include SetTagKeyMixin
+    helpers :inject, :compat_parameters
 
     config_set_default :include_time_key, true
     config_set_default :include_tag_key, true
@@ -34,6 +35,10 @@ module Fluent
     config_param :send_queue_limit, :integer, :default => 100
     config_param :send_interval,    :time,    :default => 2
 
+    config_section :inject do
+      config_set_default :time_type, :string
+    end
+
     COMMAND_MAP = {
       'priv_msg' => :priv_msg,
       'privmsg'  => :priv_msg,
@@ -53,6 +58,7 @@ module Fluent
     end
 
     def configure(conf)
+      compat_parameters_convert(conf, :inject)
       super
 
       begin
@@ -103,7 +109,7 @@ module Fluent
     def shutdown
       super
       @loop.watchers.each { |w| w.detach }
-      @loop.stop
+      @loop.stop if @loop.instance_variable_get("@running")
       @conn.close
       @thread.join
     end
@@ -115,9 +121,7 @@ module Fluent
       log.error_backtrace
     end
 
-    def emit(tag, es, chain)
-      chain.next
-
+    def process(tag, es)
       if @conn.closed?
         log.warn "out_irc: connection is closed. try to reconnect"
         @conn = create_connection
@@ -129,8 +133,7 @@ module Fluent
           break
         end
 
-        filter_record(tag, time, record)
-
+        record  = inject_values_to_record(tag, time, record)
         command = build_command(record)
         channel = build_channel(record)
         message = build_message(record)
