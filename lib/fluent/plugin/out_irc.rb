@@ -46,11 +46,6 @@ module Fluent::Plugin
       'notice'   => :notice,
     }
 
-    # To support log_level option implemented by Fluentd v0.10.43
-    unless method_defined?(:log)
-      define_method("log") { $log }
-    end
-
     attr_reader :conn # for test
 
     def configure(conf)
