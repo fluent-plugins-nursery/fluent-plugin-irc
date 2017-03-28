@@ -5,7 +5,7 @@ module Fluent::Plugin
   class IRCOutput < Output
     Fluent::Plugin.register_output('irc', self)
 
-    helpers :inject, :compat_parameters
+    helpers :inject, :compat_parameters, :timer
 
     config_set_default :include_time_key, true
     config_set_default :include_tag_key, true
@@ -93,8 +93,7 @@ module Fluent::Plugin
       begin
         @loop = Coolio::Loop.new
         @conn = create_connection
-        @timer = TimerWatcher.new(@send_interval, true, log, &method(:on_timer))
-        @loop.attach(@timer)
+        timer_execute(:out_irc_timer, @send_interval, &method(:on_timer))
         @thread = Thread.new(&method(:run))
       rescue => e
         puts e
@@ -103,11 +102,11 @@ module Fluent::Plugin
     end
 
     def shutdown
-      super
       @loop.watchers.each { |w| w.detach }
       @loop.stop if @loop.instance_variable_get("@running")
       @conn.close
       @thread.join
+      super
     end
 
     def run
@@ -189,21 +188,6 @@ module Fluent::Plugin
           log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
           ''
         end
-      end
-    end
-
-    class TimerWatcher < Coolio::TimerWatcher
-      def initialize(interval, repeat, log, &callback)
-        @callback = callback
-        @log = log
-        super(interval, repeat)
-      end
-
-      def on_timer
-        @callback.call
-      rescue
-        @log.error $!.to_s
-        @log.error_backtrace
       end
     end
 
