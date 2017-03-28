@@ -1,3 +1,4 @@
+require 'irc_parser'
 require 'fluent/plugin/output'
 
 module Fluent::Plugin
@@ -54,7 +55,6 @@ module Fluent::Plugin
 
     def initialize
       super
-      require 'irc_parser'
     end
 
     def configure(conf)
