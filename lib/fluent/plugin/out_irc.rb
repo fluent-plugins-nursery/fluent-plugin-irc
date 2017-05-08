@@ -84,12 +84,11 @@ module Fluent::Plugin
 
     def start
       super
+      @_event_loop_blocking_timeout = @blocking_timeout
 
       begin
-        @loop = Coolio::Loop.new
-        @conn = create_connection
         timer_execute(:out_irc_timer, @send_interval, &method(:on_timer))
-        @thread = Thread.new(&method(:run))
+        @conn = create_connection
       rescue => e
         puts e
         raise Fluent::ConfigError, "failed to connect IRC server #{@host}:#{@port}"
@@ -97,18 +96,8 @@ module Fluent::Plugin
     end
 
     def shutdown
-      @loop.watchers.each { |w| w.detach }
-      @loop.stop if @loop.instance_variable_get("@running")
       @conn.close
-      @thread.join
       super
-    end
-
-    def run
-      @loop.run(@blocking_timeout)
-    rescue => e
-      log.error "unexpected error", :error => e, :error_class => e.class
-      log.error_backtrace
     end
 
     def process(tag, es)
@@ -149,7 +138,7 @@ module Fluent::Plugin
       conn.user = @user
       conn.real = @real
       conn.password = @password
-      conn.attach(@loop)
+      conn.attach(@_event_loop)
       conn
     end
 
