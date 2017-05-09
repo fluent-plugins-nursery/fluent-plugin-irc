@@ -136,12 +136,12 @@ class IRCOutputTest < Test::Unit::TestCase
     }
 
     emit_test(msgs, extra_config: extra_config) do |socket|
+      socket.gets # ignore NICK
+      socket.gets # ignore USER
+
       m = IRCParser.parse(socket.gets)
       assert_equal :join, m.class.to_sym, :join
       assert_equal ["#chan1"], m.channels
-
-      socket.gets # ignore NICK
-      socket.gets # ignore USER
 
       m = IRCParser.parse(socket.gets)
       assert_equal COMMAND, m.class.to_sym
