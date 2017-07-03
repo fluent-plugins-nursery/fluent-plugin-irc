@@ -21,6 +21,8 @@ unless ENV.has_key?('VERBOSE')
   }
   $log = nulllogger
 end
+require 'fluent/test/driver/output'
+require 'fluent/test/helpers'
 require 'fluent/plugin/out_irc'
 
 class Test::Unit::TestCase

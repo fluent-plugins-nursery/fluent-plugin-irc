@@ -1,9 +1,11 @@
-module Fluent
-  class IRCOutput < Fluent::Output
+require 'irc_parser'
+require 'fluent/plugin/output'
+
+module Fluent::Plugin
+  class IRCOutput < Output
     Fluent::Plugin.register_output('irc', self)
 
-    include SetTimeKeyMixin
-    include SetTagKeyMixin
+    helpers :inject, :compat_parameters, :timer
 
     config_set_default :include_time_key, true
     config_set_default :include_tag_key, true
@@ -34,25 +36,20 @@ module Fluent
     config_param :send_queue_limit, :integer, :default => 100
     config_param :send_interval,    :time,    :default => 2
 
+    config_section :inject do
+      config_set_default :time_type, :string
+    end
+
     COMMAND_MAP = {
       'priv_msg' => :priv_msg,
       'privmsg'  => :priv_msg,
       'notice'   => :notice,
     }
 
-    # To support log_level option implemented by Fluentd v0.10.43
-    unless method_defined?(:log)
-      define_method("log") { $log }
-    end
-
     attr_reader :conn # for test
 
-    def initialize
-      super
-      require 'irc_parser'
-    end
-
     def configure(conf)
+      compat_parameters_convert(conf, :inject)
       super
 
       begin
@@ -87,13 +84,11 @@ module Fluent
 
     def start
       super
+      @_event_loop_blocking_timeout = @blocking_timeout
 
       begin
-        @loop = Coolio::Loop.new
+        timer_execute(:out_irc_timer, @send_interval, &method(:on_timer))
         @conn = create_connection
-        @timer = TimerWatcher.new(@send_interval, true, log, &method(:on_timer))
-        @loop.attach(@timer)
-        @thread = Thread.new(&method(:run))
       rescue => e
         puts e
         raise Fluent::ConfigError, "failed to connect IRC server #{@host}:#{@port}"
@@ -101,23 +96,11 @@ module Fluent
     end
 
     def shutdown
-      super
-      @loop.watchers.each { |w| w.detach }
-      @loop.stop
       @conn.close
-      @thread.join
+      super
     end
 
-    def run
-      @loop.run(@blocking_timeout)
-    rescue => e
-      log.error "unexpected error", :error => e, :error_class => e.class
-      log.error_backtrace
-    end
-
-    def emit(tag, es, chain)
-      chain.next
-
+    def process(tag, es)
       if @conn.closed?
         log.warn "out_irc: connection is closed. try to reconnect"
         @conn = create_connection
@@ -129,8 +112,7 @@ module Fluent
           break
         end
 
-        filter_record(tag, time, record)
-
+        record  = inject_values_to_record(tag, time, record)
         command = build_command(record)
         channel = build_channel(record)
         message = build_message(record)
@@ -156,7 +138,7 @@ module Fluent
       conn.user = @user
       conn.real = @real
       conn.password = @password
-      conn.attach(@loop)
+      conn.attach(@_event_loop)
       conn
     end
 
@@ -190,21 +172,6 @@ module Fluent
           log.warn "out_irc: the specified key '#{key}' not found in record. [#{record}]"
           ''
         end
-      end
-    end
-
-    class TimerWatcher < Coolio::TimerWatcher
-      def initialize(interval, repeat, log, &callback)
-        @callback = callback
-        @log = log
-        super(interval, repeat)
-      end
-
-      def on_timer
-        @callback.call
-      rescue
-        @log.error $!.to_s
-        @log.error_backtrace
       end
     end
 
