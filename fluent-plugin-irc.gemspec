@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.version     = "0.0.8"
   s.authors     = ["OKUNO Akihiro"]
   s.email       = ["choplin.choplin@gmail.com"]
-  s.homepage    = "https://github.com/choplin/fluent-plugin-irc"
+  s.homepage    = "https://github.com/fluent-plugins-nursery/fluent-plugin-irc"
   s.summary     = %q{Output plugin for IRC}
   s.description = %q{Output plugin for IRC}
   s.license     = "Apache-2.0"
