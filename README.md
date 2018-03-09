@@ -21,7 +21,7 @@ Fluent plugin to send messages to IRC server
 
 ```
 <match **>
-  type irc
+  @type irc
   host localhost
   port 6667
   channel fluentd
