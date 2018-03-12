@@ -184,7 +184,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
     emit_test(msgs, extra_config: extra_config) do |socket|
       m = IRCParser.parse(socket.gets)
-      assert_equal :join, m.class.to_sym, :join
+      assert_equal :join, m.class.to_sym
 
       m = IRCParser.parse(socket.gets)
       assert_equal :priv_msg, m.class.to_sym
