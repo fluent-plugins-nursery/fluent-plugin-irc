@@ -13,24 +13,18 @@ module Fluent::Plugin
     config_param :host        , :string  , :default => 'localhost'
     config_param :port        , :integer , :default => 6667
     config_param :channel     , :string
-    config_param :channel_keys, :default => nil do |val|
-      val.split(',')
-    end
+    config_param :channel_keys, :array   , :default => []
     config_param :nick        , :string  , :default => 'fluentd'
     config_param :user        , :string  , :default => 'fluentd'
     config_param :real        , :string  , :default => 'fluentd'
     config_param :password    , :string  , :default => nil, :secret => true
     config_param :message     , :string
-    config_param :out_keys do |val|
-      val.split(',')
-    end
+    config_param :out_keys    , :array
     config_param :time_key    , :string  , :default => 'time'
     config_param :time_format , :string  , :default => '%Y/%m/%d %H:%M:%S'
     config_param :tag_key     , :string  , :default => 'tag'
     config_param :command     , :string  , :default => 'privmsg'
-    config_param :command_keys, :default => nil do |val|
-      val.split(',')
-    end
+    config_param :command_keys, :array   , :default => []
 
     config_param :blocking_timeout, :time,    :default => 0.5
     config_param :send_queue_limit, :integer, :default => 100
@@ -58,7 +52,7 @@ module Fluent::Plugin
         raise Fluent::ConfigError, "string specifier '%s' and out_keys specification mismatch"
       end
 
-      if @channel_keys
+      unless @channel_keys.empty?
         begin
           @channel % (['1'] * @channel_keys.length)
         rescue ArgumentError
@@ -67,7 +61,7 @@ module Fluent::Plugin
       end
       @channel = '#'+@channel
 
-      if @command_keys
+      unless @command_keys.empty?
         begin
           @command % (['1'] * @command_keys.length)
         rescue ArgumentError
@@ -148,14 +142,14 @@ module Fluent::Plugin
     end
 
     def build_channel(record)
-      return @channel unless @channel_keys
+      return @channel if @channel_keys.empty?
 
       values = fetch_keys(record, @channel_keys)
       @channel % values
     end
 
     def build_command(record)
-      return @command unless @command_keys
+      return @command if @command_keys.empty?
 
       values = fetch_keys(record, @command_keys)
       unless command = COMMAND_MAP[@command % values]
