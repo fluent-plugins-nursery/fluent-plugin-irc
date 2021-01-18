@@ -101,6 +101,7 @@ class IRCOutputTest < Test::Unit::TestCase
 
     m = {}
     emit_test(msgs) do |socket|
+      socket.set_encoding("utf-8")
       s = IRCParser.parse(socket.gets)
       m[s.class.to_sym] = s
 
