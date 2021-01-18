@@ -240,9 +240,13 @@ class IRCOutputTest < Test::Unit::TestCase
       d = create_driver(config({port: port}.merge(extra_config)))
 
       thread = Thread.new do
-        s = serv.accept
-        block.call(s, d)
-        s.close
+        begin
+          s = serv.accept
+          block.call(s, d)
+          s.close
+        rescue IOError
+          # Suppress stream closed in another thread (IOError)
+        end
       end
 
       d.run(default_tag: TAG) do
