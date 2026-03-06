@@ -19,23 +19,17 @@ class IRCOutputTest < Test::Unit::TestCase
     Fluent::Engine.now = Time.now
   end
 
-  def config(
-    port: PORT,
-    channel: CHANNEL,
-    channel_keys: "",
-    command: COMMAND.to_s,
-    command_keys: nil
-  )
+  def config(options = {})
     data = %[
       type irc
       host localhost
-      port #{port}
-      channel #{channel}
-      channel_keys #{channel_keys}
+      port #{options.fetch(:port, PORT)}
+      channel #{options.fetch(:channel, CHANNEL)}
+      channel_keys #{options.fetch(:channel_keys, "")}
       nick #{NICK}
       user #{USER}
       real #{REAL}
-      command #{command}
+      command #{options.fetch(:command, COMMAND.to_s)}
       message #{MESSAGE}
       out_keys tag,time,msg
       time_key time
@@ -44,6 +38,7 @@ class IRCOutputTest < Test::Unit::TestCase
       send_queue_limit 10
       send_interval 0.5
     ]
+    command_keys = options.fetch(:command_keys, nil)
     data += %[command_keys #{command_keys}] if command_keys
     data
   end
@@ -73,25 +68,25 @@ class IRCOutputTest < Test::Unit::TestCase
   end
 
   def test_configure_channel_keys
-    d = create_driver(config(channel:"%s", channel_keys:"channel"))
+    d = create_driver(config({channel:"%s", channel_keys:"channel"}))
     assert_equal "#%s", d.instance.channel
     assert_equal ["channel"], d.instance.channel_keys
   end
 
   def test_configure_command_keys
-    d = create_driver(config(command:"%s", command_keys:"command"))
+    d = create_driver(config({command:"%s", command_keys:"command"}))
     assert_equal "%s", d.instance.command
     assert_equal ["command"], d.instance.command_keys
   end
 
   def test_configure_command
     assert_raise Fluent::ConfigError do
-      create_driver(config(command: 'foo'))
+      create_driver(config({command: 'foo'}))
     end
 
-    assert_nothing_raised { create_driver(config(command: 'priv_msg')) }
-    assert_nothing_raised { create_driver(config(command: 'privmsg')) }
-    assert_nothing_raised { create_driver(config(command: 'notice')) }
+    assert_nothing_raised { create_driver(config({command: 'priv_msg'})) }
+    assert_nothing_raised { create_driver(config({command: 'privmsg'})) }
+    assert_nothing_raised { create_driver(config({command: 'notice'})) }
   end
 
   def test_emit
