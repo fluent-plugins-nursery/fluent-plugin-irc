@@ -106,7 +106,7 @@ class IRCOutputTest < Test::Unit::TestCase
       s = IRCParser.parse(socket.gets)
       m[s.class.to_sym] = s
 
-      s = IRCParser.parse(socket.gets)
+      s = IRCParser.parse(socket.gets&.force_encoding("utf-8"))
       m[s.class.to_sym] = s
 
       assert_equal ["##{CHANNEL}"], m[:join].channels
