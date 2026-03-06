@@ -26,7 +26,7 @@ class IRCOutputTest < Test::Unit::TestCase
     command: COMMAND.to_s,
     command_keys: nil
   )
-    config = %[
+    data = %[
       type irc
       host localhost
       port #{port}
@@ -44,8 +44,8 @@ class IRCOutputTest < Test::Unit::TestCase
       send_queue_limit 10
       send_interval 0.5
     ]
-    config += %[command_keys #{command_keys}] if command_keys
-    config
+    data += %[command_keys #{command_keys}] if command_keys
+    data
   end
 
 
